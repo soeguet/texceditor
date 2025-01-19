@@ -1,64 +1,140 @@
+/*******************************************************************************************
+ *
+ *   raylib [text] example - Input Box
+ *
+ *   Example complexity rating: [★★☆☆] 2/4
+ *
+ *   Example originally created with raylib 1.7, last time updated with
+ *raylib 3.5
+ *
+ *   Example licensed under an unmodified zlib/libpng license, which is an
+ *OSI-certified, BSD-like license that allows static linking with closed source
+ *software
+ *
+ *   Copyright (c) 2017-2025 Ramon Santamaria (@raysan5)
+ *
+ ********************************************************************************************/
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "raylib.h"
+
+typedef struct {
+    char *chars;
+    int32_t length;
+    int32_t capacity;
+} String;
+
+void initString(String *str) {
+    str->chars = malloc(16);
+    str->length = 0;
+    str->capacity = 16;
+    str->chars[0] = '\0';
+}
+
+void removeChar(String *str) {
+    if (str->length > 0) {
+        str->chars[str->length - 1] = '\0';
+        str->length--;
+    }
+}
+
+void appendChar(String *str, char c) {
+    if (str->length + 1 >= str->capacity) {
+        str->capacity *= 2;
+        str->chars = realloc(str->chars, str->capacity);
+    }
+    str->chars[str->length++] = c;
+    str->chars[str->length] = '\0';
+}
+
+void freeString(String *str) {
+    free(str->chars);
+    str->chars = NULL;
+    str->length = 0;
+    str->capacity = 0;
+}
+
 
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
-int main(void)
-{
+int main(void) {
     // Initialization
     //--------------------------------------------------------------------------------------
     const int screenWidth = 800;
     const int screenHeight = 450;
 
-    InitWindow(screenWidth, screenHeight, "raylib [text] example - font loading");
+    InitWindow(screenWidth, screenHeight, "raylib [text] example - input box");
 
-    // Define characters to draw
-    // NOTE: raylib supports UTF-8 encoding, following list is actually codified as UTF8 internally
-    const char msg[256] = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ";
+    String custom_user_input;
+    initString(&custom_user_input);
 
-    // NOTE: Textures/Fonts MUST be loaded after Window initialization (OpenGL context is required)
 
-    // BMFont (AngelCode) : Font data and image atlas have been generated using external program
-    Font fontBm = LoadFont("assets/Monoid.ttf");
+    int letterCount = 0;
 
-    // TTF font : Font data and atlas are generated directly from TTF
-    // NOTE: We define a font base size of 32 pixels tall and up-to 250 characters
-    Font fontTtf = LoadFontEx("assets/Monoid.ttf", 32, 0, 250);
+    const Font fontTtf = LoadFontEx("assets/Monoid.ttf", 40, 0, 250);
 
-    SetTextLineSpacing(16);         // Set line spacing for multiline text (when line breaks are included '\n')
+    const Rectangle textBox = {0, 0, screenHeight, screenHeight};
 
-    bool useTtf = false;
+    int framesCounter = 0;
 
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
+    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
     // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         // Update
         //----------------------------------------------------------------------------------
-        if (IsKeyDown(KEY_SPACE)) useTtf = true;
-        else useTtf = false;
+
+        // Get char pressed (unicode character) on the queue
+        int key = GetCharPressed();
+
+        // Check if more characters have been pressed on the same frame
+        while (key > 0) {
+            // NOTE: Only allow keys in range [32..125]
+            if ((key >= 32) && (key <= 125)) {
+                appendChar(&custom_user_input, (char) key);
+                letterCount++;
+            }
+
+            key = GetCharPressed(); // Check next character in the queue
+        }
+
+        if (IsKeyPressed(KEY_BACKSPACE)) {
+            if (custom_user_input.length > 0) {
+                removeChar(&custom_user_input);
+            }
+        } else if (IsKeyPressed(KEY_ENTER)) {
+            appendChar(&custom_user_input, '\n');
+        }
+
+
+        framesCounter++;
+
         //----------------------------------------------------------------------------------
 
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
 
-            ClearBackground(RAYWHITE);
+        ClearBackground(RAYWHITE);
 
-            DrawText("Hold SPACE to use TTF generated font", 20, 20, 20, LIGHTGRAY);
+        DrawTextEx(fontTtf, custom_user_input.chars,
+                   (Vector2){(textBox.x), (textBox.y)},
+                   (float) fontTtf.baseSize, 3, RED);
 
-            if (!useTtf)
-            {
-                DrawTextEx(fontBm, msg, (Vector2){ 20.0f, 100.0f }, (float)fontBm.baseSize, 2, MAROON);
-                DrawText("Using BMFont (Angelcode) imported", 20, GetScreenHeight() - 30, 20, GRAY);
-            }
-            else
-            {
-                DrawTextEx(fontTtf, msg, (Vector2){ 20.0f, 100.0f }, (float)fontTtf.baseSize, 2, LIME);
-                DrawText("Using TTF font generated", 20, GetScreenHeight() - 30, 20, GRAY);
-            }
+
+        // BLINKING CURSOR
+        // if (((framesCounter / 40) % 2) == 0)
+        //     DrawLine((int) textBox.x + 8 + MeasureText(custom_user_input.chars, 40),
+        //              (int) textBox.y + 3,
+        //              (int) textBox.x + 8 + MeasureText(custom_user_input.chars, 40) + 1,
+        //              (int) textBox.y + (int) textBox.height - 3, RED);
 
         EndDrawing();
         //----------------------------------------------------------------------------------
@@ -66,11 +142,20 @@ int main(void)
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
-    UnloadFont(fontBm);     // AngelCode Font unloading
-    UnloadFont(fontTtf);    // TTF Font unloading
-
-    CloseWindow();          // Close window and OpenGL context
+    CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 
     return 0;
+}
+
+// Check if any key is pressed
+// NOTE: We limit keys check to keys between 32 (KEY_SPACE) and 126
+bool IsAnyKeyPressed() {
+    bool keyPressed = false;
+    const int key = GetKeyPressed();
+
+    if ((key >= 32) && (key <= 126))
+        keyPressed = true;
+
+    return keyPressed;
 }
