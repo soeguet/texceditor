@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="_debug_main" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="texceditor" TARGET_NAME="_debug_main" CONFIG_NAME="_debug_main">
+    <option name="compilerOptions" value="-Llib -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -Iinclude" />
+    <option name="sourceFile" value="src/main.c" />
+    <method v="2">
+      <option name="com.jetbrains.cidr.cpp.runfile.CppFileBuildBeforeRunTaskProvider$BasicBuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>
